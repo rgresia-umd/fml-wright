@@ -17,187 +17,85 @@ from fmlwright.trainer.neural_networks.networks import (
 log = logging.getLogger(__name__)
 
 
-class BiCycleGAN(BaseModel):
-    """Generate the BiCycleGAN class."""
+class DCGAN(BaseModel):
+    """Generate the DCGAN class."""
 
     def __init__(self, conf):
-        """Initialize the BiCycleGAN.
+        """Initialize the DCGAN.
         Args:
             conf (dict): loaded configuration file.
         """
         super().__init__(conf)
-        self.latent_vector = conf["nn_structure"]["latent_vector"]
-
-        self.add_noise_disc_input = conf["stabilization"]["discriminator_noise_input"][
-            "add"
-        ]
-        self.n_noise_disc_input = conf["stabilization"]["discriminator_noise_input"][
-            "max_n_steps"
-        ]
 
         conf_generator = conf["nn_structure"]["generator"]
-        self.G = create_generator(conf_generator, self.input_shape, self.latent_vector)
+        self.G = create_generator(conf_generator, self.input_shape)
 
         conf_discriminator = conf["nn_structure"]["discriminator"]
         self.D = create_discriminator(conf_discriminator, self.input_shape)
 
-        self.num_D = conf_discriminator["num_D"]
         self.disc_loss_function = (
             BinaryCrossentropy(from_logits=True)
             if conf_discriminator["loss_function"] == "BCE"
             else MeanSquaredError()
         )
+        self.gen_loss_function = BinaryCrossentropy(from_logits=True)
 
         if self.ttur:
-            self.D_optimizer = Adam(learning_rate=self.d_lr, beta_1=0.5)
-            self.G_optimizer = Adam(learning_rate=self.g_lr, beta_1=0.5)
+            self.D_optimizer = Adam(learning_rate=self.d_lr)
+            self.G_optimizer = Adam(learning_rate=self.g_lr)
         else:
-            self.D_optimizer = Adam(learning_rate=self.lr, beta_1=0.5)
-            self.G_optimizer = Adam(learning_rate=self.lr, beta_1=0.5)
+            self.D_optimizer = Adam(learning_rate=self.lr)
+            self.G_optimizer = Adam(learning_rate=self.lr)
 
         self.disc_optimizers = [self.D_optimizer]
         self.generator_optimizers = [self.G_optimizer]
 
-    def calculate_G_loss(self, z_rand_mu, z_random):
+    def calculate_G_loss(self, fake_output):
         """Calculate the G loss.
-        This is the latent loss.
-        z -> B' -> z_mu
         Args:
-            z_rand_mu (tf.tensor): z_random mu values.
-            z_random (tf.tensor): z_random values.
+            fake_output (tf.tensor): discriminator's evaluation of fake images
         Returns:
             Tensor with a specific part of just the G loss.
         """
-        clr_loss = tf.reduce_mean(tf.abs(z_rand_mu - z_random)) * self.LRM_loss_coeff
-        return clr_loss
+        return self.gen_loss_function(tf.ones_like(fake_output), fake_output)
 
     def calculate_D_loss(
-        self, discriminator_b_real, discriminator_b_random, discriminator_b_encoded
+        self, fake_output, real_output, 
     ):
         """Calculate the D loss.
         Args:
-            discriminator_b_real (tf.tensor): Discriminator prediction for real B image.
-            discriminator_b_random (tf.tensor): Discriminator prediction for generated B image
-                with z_random.
-            discriminator_b_encoded (tf.tensor): Discriminator prediction for generated B image
-                with z_encoded.
+            fake_output (tf.tensor): discriminator's evaluation of fake images
+            real_output (tf.tensor): discriminator's evaluation of real images
         Returns:
             tensors with the D loss parts.
         """
-        D_true_loss = (
-            self.disc_loss_function(self.create_label(True), discriminator_b_real)
-            * self.DM_loss_coeff
-        )
+        D_real_loss = self.disc_loss_function(tf.ones_like(real_output), real_output)
 
-        D_random_loss = (
-            self.disc_loss_function(discriminator_b_random, self.create_label(False))
-            * self.DM_loss_coeff
-        )
-        D_encoded_loss = (
-            self.disc_loss_function(discriminator_b_encoded, self.create_label(False))
-            * self.DM_loss_coeff
-        )
-        return D_true_loss, D_random_loss, D_encoded_loss
-
+        D_fake_loss = self.disc_loss_function(tf.zeros_like(fake_output), fake_output)
+        
+        D_total_loss = D_fake_loss + D_real_loss
+        return D_total_loss, D_fake_loss, D_real_loss
+    
     @tf.function
-    def train_D(self, batch, disc_std):
-        """Batch train the discriminator.
-        Args:
-            batch (tensor): tensor with batches of real input and target.
-            disc_std (tensor): tensor with float value depicting current std for disc noise.
-        Returns:
-            Tensors with D losses.
-        """
-        disc_input_noise = tf.random.normal(
-            mean=0, stddev=disc_std, shape=self.input_shape
-        )
+    def train_step(self, images):
+        noise = tf.random.normal([BATCH_SIZE, noise_dim])
 
-        with tf.GradientTape() as disc_tape:
-            real_input, real_target = batch
-            z_random = tf.random.normal(shape=[self.batch_size, self.latent_vector])
+        with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+          generated_images = self.G(noise, training=True)
 
-            # cVAE GAN
-            # B -> z' -> B'
-            z_encoded, z_enc_mu, z_enc_log_sigma = self.E(real_target, training=True)
-            generated_b_encoded = self.G([real_input, z_encoded], training=True)
+          real_output = self.D(images, training=True)
+          fake_output = self.D(generated_images, training=True)
 
-            # cLR GAN
-            # z -> B' -> z'
-            generated_b_random = self.G([real_input, z_random], training=True)
-            _, z_rand_mu, _ = self.E(generated_b_random, training=True)
+          G_loss = self.calc_G_loss(fake_output)
+          D_total_loss, D_fake_loss, D_real_loss = self.calc_D_loss(real_output, fake_output)
 
-            discriminator_b_random = self.D(
-                generated_b_random + disc_input_noise, training=True
-            )
-            discriminator_b_encoded = self.D(
-                generated_b_encoded + disc_input_noise, training=True
-            )
-            discriminator_b_real = self.D(real_target + disc_input_noise, training=True)
+        G_grads = gen_tape.gradient(G_loss, self.G.trainable_variables)
+        D_grads = disc_tape.gradient(D_loss, self.D.trainable_variables)
 
-            # D losses
-            D_true_loss, D_random_loss, D_encoded_loss = self.calculate_D_loss(
-                discriminator_b_real, discriminator_b_random, discriminator_b_encoded
-            )
-
-            total_D_loss = D_true_loss + D_true_loss + D_random_loss + D_encoded_loss
-
-        discriminator_gradients = disc_tape.gradient(
-            total_D_loss, self.D.trainable_variables
-        )
-        self.D_optimizer.apply_gradients(
-            zip(discriminator_gradients, self.D.trainable_variables)
-        )
-
-        return total_D_loss, D_true_loss, D_random_loss, D_encoded_loss
-
-    @tf.function
-    def train_G(self, batch, disc_std):
-        """Batch train the generator.
-        Args:
-            batch (tensor): tensor with batches of real input and target.
-            disc_std (tensor): tensor with float value depicting current std for disc noise.
-        Returns:
-            tensors with the G loss.
-        """
-        with tf.GradientTape() as gen_tape, tf.GradientTape() as enc_tape:
-            real_input, real_target = batch
-            z_random = tf.random.normal(shape=[self.batch_size, self.latent_vector])
-            disc_input_noise = tf.random.normal(
-                mean=0, stddev=disc_std, shape=self.input_shape
-            )
-
-            # cVAE GAN
-            # B -> z' -> B'
-            generated_b_encoded = self.G([real_input, z_encoded], training=True)
-
-            # cLR GAN
-            # z -> B' -> z'
-            generated_b_random = self.G([real_input, z_random], training=True)
-            _, z_rand_mu, _ = self.E(generated_b_random, training=True)
-
-            discriminator_b_random = self.D(
-                generated_b_random + disc_input_noise, training=True
-            )
-            discriminator_b_encoded = self.D(
-                generated_b_encoded + disc_input_noise, training=True
-            )
-
-            # G_loss
-            clr_loss = self.calculate_G_loss(z_rand_mu, z_random)
-
-            total_G_loss = gan_loss + vaegan_loss + l1_loss + kl_loss + clr_loss
-
-        generator_gradients = gen_tape.gradient(
-            total_G_loss, self.G.trainable_variables
-        )
-        self.G_optimizer.apply_gradients(
-            zip(generator_gradients, self.G.trainable_variables)
-        )
-
-        return (
-            total_G_loss,
-            gan_loss,
-        )
+        self.G_optimizer.apply_gradients(zip(G_grads, self.G.trainable_variables))
+        self.D_optimizer.apply_gradients(zip(D_grads, self.D.trainable_variables))
+        
+        return G_loss, D_total_loss, D_fake_loss, D_real_loss
 
     @tf.function
     def batch_train(self, batch, current_step, disc_std):
@@ -207,42 +105,19 @@ class BiCycleGAN(BaseModel):
             current_step (tensor): tensor with int value depicting current step.
             disc_std (tensor): tensor with float value depicting current std for disc noise.
         """
-        total_D_loss, D_true_loss, D_random_loss, D_encoded_loss = self.train_D(
-            batch, disc_std
-        )
-        (
-            total_G_loss,
-            total_E_loss,
-            gan_loss,
-            vaegan_loss,
-            l1_loss,
-            kl_loss,
-            clr_loss,
-        ) = self.train_G_E(batch, disc_std)
+        G_loss, D_total_loss, D_fake_loss, D_real_loss = self.train_step(batch)
 
         with self.summary_writer.as_default():
-            tf.summary.scalar("model/total_D_loss", total_D_loss, step=current_step)
-            tf.summary.scalar("model/total_G_loss", total_G_loss, step=current_step)
-            tf.summary.scalar("model/total_E_loss", total_E_loss, step=current_step)
-            tf.summary.scalar("D/D_true_loss", D_true_loss, step=current_step)
-            tf.summary.scalar("D/D_random_loss", D_random_loss, step=current_step)
-            tf.summary.scalar("D/D_encoded_loss", D_encoded_loss, step=current_step)
-            tf.summary.scalar("G_E/gan_loss", gan_loss, step=current_step)
-            tf.summary.scalar("G_E/vaegan_loss", vaegan_loss, step=current_step)
-            tf.summary.scalar("G_E/l1_loss", l1_loss, step=current_step)
-            tf.summary.scalar("G_E/kl_loss", kl_loss, step=current_step)
-            tf.summary.scalar("G/clr_loss", clr_loss, step=current_step)
-            tf.summary.scalar(
-                "model_info/std_D_noise", disc_std, step=current_step,
-            )
+            tf.summary.scalar("model/total_D_loss", D_total_loss, step=current_step)
+            tf.summary.scalar("model/total_G_loss", G_loss, step=current_step)
+            tf.summary.scalar("D/D_fake_loss", D_fake_loss, step=current_step)
+            tf.summary.scalar("D/D_real_loss", D_real_loss, step=current_step)
+            
             tf.summary.scalar(
                 "model_info/G_lr", self.G_optimizer.learning_rate, step=current_step
             )
             tf.summary.scalar(
                 "model_info/D_lr", self.D_optimizer.learning_rate, step=current_step
-            )
-            tf.summary.scalar(
-                "model_info/E_lr", self.E_optimizer.learning_rate, step=current_step
             )
 
     def load_models(self, models_directory, version=None):
