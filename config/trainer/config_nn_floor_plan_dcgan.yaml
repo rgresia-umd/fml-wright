@@ -41,6 +41,7 @@ nn_structure:
     dropout: 0.5
     activation: 'leakyrelu'
     filter_size: 64
+    noise_dim: 100
 
   discriminator:
     num_D: 1  # 2 discriminators has been removed for now.
