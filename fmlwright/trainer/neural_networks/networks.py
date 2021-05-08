@@ -7,7 +7,7 @@ from fmlwright.trainer.neural_networks.unet import create_unet
 log = logging.getLogger(__name__)
 
 
-def create_generator(conf, input_shape, latent_vector):
+def create_generator(conf, input_shape, latent_vector=None):
     """Create the generator model.
 
     Args:
