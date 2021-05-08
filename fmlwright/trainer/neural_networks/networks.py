@@ -48,14 +48,9 @@ def create_generator(conf, input_shape, latent_vector):
             raise ValueError("Unknown algorithm selected.")
     elif model_type == "DCGAN":
         if neural_network == "DC":
-            model = create_dc_gen(
+            model = create_dcgen(
                 input_shape=input_shape,
-                latent_vector=latent_vector,
-                filter_size=conf["filter_size"],
-                activation=conf["activation"],
-                normalization=conf["normalization"],
-                dropout=conf["dropout"],
-                z_input_layer="first",
+                output_shape=conf["output_shape"],
             )
         else:
             raise ValueError("Unknown algorithm selected.")
@@ -97,13 +92,22 @@ def create_discriminator(conf, input_shape):
     Returns:
         Keras model.
     """
-    model = create_patchgan(
-        input_shape=input_shape,
-        filter_size=conf["filter_size"],
-        dropout=conf["dropout"],
-        activation=conf["activation"],
-        normalization=conf["normalization"],
-        name="discriminator",
-        num_D=conf["num_D"],
-    )
-    return model
+    if (conf["model_type"]=="DCGAN"){
+        model = create_dcdisc(
+            input_shape=input_shape
+            dropout=conf["dropout"]
+        )
+        return model
+    } else {
+        model = create_patchgan(
+            input_shape=input_shape,
+            filter_size=conf["filter_size"],
+            dropout=conf["dropout"],
+            activation=conf["activation"],
+            normalization=conf["normalization"],
+            name="discriminator",
+            num_D=conf["num_D"],
+        )
+        return model
+    }
+}
