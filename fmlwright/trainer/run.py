@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from fmlwright.core import data_sources
-from fmlwright.trainer.models import BiCycleGAN, Pix2Pix
+from fmlwright.trainer.models import BiCycleGAN, Pix2Pix, DCGAN
 
 log = logging.getLogger(__name__)
 
@@ -33,10 +33,14 @@ def run(conf):
         log.info("Pix2Pix model has been selected.")
         log.info("Creating model.")
         Model = Pix2Pix(conf=conf)
+    elif conf["nn_structure"]["generator"]["model_type"] == "DCGAN":
+        log.info("DCGAN model has been selected.")
+        log.info("Creating model.")
+        Model = DCGAN(conf=conf)
     else:
         Model = None
         log.error("Unknown model type has been selected.")
-        log.error("Your options are: BiCycleGAN, Pix2Pix.")
+        log.error("Your options are: BiCycleGAN, Pix2Pix, DCGAN.")
         log.error("Exiting...")
         exit()
 
