@@ -46,6 +46,19 @@ def create_generator(conf, input_shape, latent_vector):
             )
         else:
             raise ValueError("Unknown algorithm selected.")
+    elif model_type == "DCGAN":
+        if neural_network == "DC":
+            model = create_dc_gen(
+                input_shape=input_shape,
+                latent_vector=latent_vector,
+                filter_size=conf["filter_size"],
+                activation=conf["activation"],
+                normalization=conf["normalization"],
+                dropout=conf["dropout"],
+                z_input_layer="first",
+            )
+        else:
+            raise ValueError("Unknown algorithm selected.")
     else:
         raise ValueError("Unknown model type selected..")
     return model
