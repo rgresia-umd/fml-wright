@@ -16,9 +16,9 @@ import logging
 
 log = logging.getLogger(__name__)
 
-def create_dcgen(input_shape, output_shape, dropout):
+def create_dcgen(input_shape, noise_dim, dropout):
     model = Sequential()
-    model.add(Dense((output_shape[0]/4)*(output_shape[1]/4)*(output_shape[2]*256), use_bias=False, input_shape=input_shape)
+    model.add(Dense((output_shape[0]/4)*(output_shape[1]/4)*(output_shape[2]*256), use_bias=False, input_shape=noise_dim)
     model.add(BatchNormalization())
     model.add(LeakyReLU())
 
