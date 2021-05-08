@@ -78,7 +78,7 @@ class DCGAN(BaseModel):
     
     @tf.function
     def train_step(self, images):
-        noise = tf.random.normal([BATCH_SIZE, noise_dim])
+        noise = tf.random.normal([self.batch_size, self.G.noise_dim])
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
           generated_images = self.G(noise, training=True)
@@ -129,7 +129,6 @@ class DCGAN(BaseModel):
         version = "_" + str(version) if version else ""
         self.D = load_model(models_directory / f"discriminator{version}.h5")
         self.G = load_model(models_directory / f"generator{version}.h5")
-        self.E = load_model(models_directory / f"encoder{version}.h5")
 
     def save_models(self, models_directory, version=None):
         """Save the model weights.
@@ -142,7 +141,6 @@ class DCGAN(BaseModel):
 
         self.D.save(models_directory / f"discriminator{version}.h5")
         self.G.save(models_directory / f"generator{version}.h5")
-        self.E.save(models_directory / f"encoder{version}.h5")
 
     def create_example(self, example, filename):
         """Creates and stores four examples based on a random input image.
@@ -153,13 +151,8 @@ class DCGAN(BaseModel):
         for input_image, output_image in example:
             predictions = {}
             for i in np.arange(4):
-                z_random = create_z_random(
-                    mean=0,
-                    std=1,
-                    batch_size=self.batch_size,
-                    latent_vector=self.latent_vector,
-                )
-                predicted_image = self.G.predict([input_image.numpy(), z_random])
+                random_noise = tf.random.normal([1, self.G.noise_dim])
+                predicted_image = self.G.predict([input_image.numpy(), random_noise])
                 predicted_image = (predicted_image[0] * 0.5) + 0.5
                 predictions[i] = predicted_image
 
