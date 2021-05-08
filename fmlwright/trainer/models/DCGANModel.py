@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class DCGAN(BaseModel):
-    """Generate the DCGAN class."""
+    """DCGAN Model"""
 
     def __init__(self, conf):
         """Initialize the DCGAN.
@@ -29,14 +29,13 @@ class DCGAN(BaseModel):
 
         conf_generator = conf["nn_structure"]["generator"]
         self.G = create_generator(conf_generator, self.input_shape)
+        self.noise_dim = conf["nn_structure"]["generator"]["noise_dim"]
 
         conf_discriminator = conf["nn_structure"]["discriminator"]
         self.D = create_discriminator(conf_discriminator, self.input_shape)
 
         self.disc_loss_function = (
             BinaryCrossentropy(from_logits=True)
-            if conf_discriminator["loss_function"] == "BCE"
-            else MeanSquaredError()
         )
         self.gen_loss_function = BinaryCrossentropy(from_logits=True)
 
@@ -50,7 +49,7 @@ class DCGAN(BaseModel):
         self.disc_optimizers = [self.D_optimizer]
         self.generator_optimizers = [self.G_optimizer]
 
-    def calculate_G_loss(self, fake_output):
+    def calc_G_loss(self, fake_output):
         """Calculate the G loss.
         Args:
             fake_output (tf.tensor): discriminator's evaluation of fake images
@@ -59,7 +58,7 @@ class DCGAN(BaseModel):
         """
         return self.gen_loss_function(tf.ones_like(fake_output), fake_output)
 
-    def calculate_D_loss(
+    def calc_D_loss(
         self, fake_output, real_output, 
     ):
         """Calculate the D loss.
@@ -78,19 +77,19 @@ class DCGAN(BaseModel):
     
     @tf.function
     def train_step(self, images):
-        noise = tf.random.normal([self.batch_size, self.G.noise_dim])
+        noise = tf.random.normal([self.batch_size, self.noise_dim])
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
           generated_images = self.G(noise, training=True)
 
-          real_output = self.D(images, training=True)
+          real_output = self.D(images[0], training=True)
           fake_output = self.D(generated_images, training=True)
 
           G_loss = self.calc_G_loss(fake_output)
           D_total_loss, D_fake_loss, D_real_loss = self.calc_D_loss(real_output, fake_output)
 
         G_grads = gen_tape.gradient(G_loss, self.G.trainable_variables)
-        D_grads = disc_tape.gradient(D_loss, self.D.trainable_variables)
+        D_grads = disc_tape.gradient(D_total_loss, self.D.trainable_variables)
 
         self.G_optimizer.apply_gradients(zip(G_grads, self.G.trainable_variables))
         self.D_optimizer.apply_gradients(zip(D_grads, self.D.trainable_variables))
@@ -151,8 +150,8 @@ class DCGAN(BaseModel):
         for input_image, output_image in example:
             predictions = {}
             for i in np.arange(4):
-                random_noise = tf.random.normal([1, self.G.noise_dim])
-                predicted_image = self.G.predict([input_image.numpy(), random_noise])
+                random_noise = tf.random.normal([1, self.noise_dim])
+                predicted_image = self.G.predict(random_noise)
                 predicted_image = (predicted_image[0] * 0.5) + 0.5
                 predictions[i] = predicted_image
 

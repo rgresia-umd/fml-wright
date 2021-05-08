@@ -106,7 +106,7 @@ class GeoDataGenerator:
             self.output_directory / f"index_floorplans_{dataset_block}.csv", index=False
         )
 
-    def run(self, dataset_size=1000, n_jobs=-1, starting_block=0):
+    def run(self, dataset_size=4, n_jobs=-1, starting_block=0):
         """Function that does all of the work.
 
         It loads txt files and creates geojson files. The number of samples in a single file is

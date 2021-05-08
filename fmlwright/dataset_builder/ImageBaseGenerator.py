@@ -136,7 +136,7 @@ class ImageBaseGenerator:
             self.output_directory / f"index_file_{block_number}.csv", index=False
         )
 
-    def run(self, n_jobs=-1, starting_block=0, dataset_size=500):
+    def run(self, n_jobs=-1, starting_block=0, dataset_size=4):
         """Function that does all the work.
 
         This function loads the data and runs through all of the samples in order to create the

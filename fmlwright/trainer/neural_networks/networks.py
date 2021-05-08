@@ -4,7 +4,7 @@ from fmlwright.trainer.neural_networks.patchgan import create_patchgan
 from fmlwright.trainer.neural_networks.residual import create_residual_network
 from fmlwright.trainer.neural_networks.unet import create_unet
 from fmlwright.trainer.neural_networks.dcgen import create_dcgen
-from fmlwright.trainer.neural_networks.dcdisc import creat_dcdisc
+from fmlwright.trainer.neural_networks.dcdisc import create_dcdisc
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +52,8 @@ def create_generator(conf, input_shape, latent_vector=None):
         if neural_network == "DC":
             model = create_dcgen(
                 input_shape=input_shape,
-                output_shape=conf["output_shape"],
+                noise_dim=conf["noise_dim"],
+                dropout=conf["dropout"]
             )
         else:
             raise ValueError("Unknown algorithm selected.")
@@ -94,13 +95,13 @@ def create_discriminator(conf, input_shape):
     Returns:
         Keras model.
     """
-    if (conf["model_type"]=="DCGAN"){
+    if conf["model_type"] == "DCGAN":
         model = create_dcdisc(
-            input_shape=input_shape
+            input_shape=input_shape,
             dropout=conf["dropout"]
         )
         return model
-    } else {
+    else:
         model = create_patchgan(
             input_shape=input_shape,
             filter_size=conf["filter_size"],
@@ -111,5 +112,3 @@ def create_discriminator(conf, input_shape):
             num_D=conf["num_D"],
         )
         return model
-    }
-}

@@ -3,7 +3,7 @@ settings:
   use_gpu: True
   storage_location: './results/floorplan' # Gets appended with category and model type.
   dataset_directory: './data/datasets/floorplan'
-  category: ''
+  category: 'living_room'
   batch_size: 1
   buffer_size: 256
   sample: False
@@ -36,7 +36,7 @@ nn_structure:
   generator:
     model_type: 'DCGAN'
     z_input_layer: 'first'  # where to add z, options are: ['first', 'intermediate']
-    neural_network: 'dcgen'
+    neural_network: 'DC'
     normalization: 'instance'
     dropout: 0.5
     activation: 'leakyrelu'
@@ -44,6 +44,7 @@ nn_structure:
     noise_dim: 100
 
   discriminator:
+    model_type: 'DCGAN'
     num_D: 1  # 2 discriminators has been removed for now.
     normalization: 'instance'
     dropout: 0.25

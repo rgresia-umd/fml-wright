@@ -1,11 +1,10 @@
 import tensorflow as tf
-from tensorflow.keras import layers
+from tensorflow.keras import (layers, Sequential,)
 from tensorflow.keras.layers import (
     Conv2D,
     Dropout,
     LeakyReLU,
     BatchNormalization,
-    Sequential,
     Dense,
     Flatten,
 )
