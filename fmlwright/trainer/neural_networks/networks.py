@@ -3,6 +3,8 @@ import logging
 from fmlwright.trainer.neural_networks.patchgan import create_patchgan
 from fmlwright.trainer.neural_networks.residual import create_residual_network
 from fmlwright.trainer.neural_networks.unet import create_unet
+from fmlwright.trainer.neural_networks.dcgen import create_dcgen
+from fmlwright.trainer.neural_networks.dcdisc import creat_dcdisc
 
 log = logging.getLogger(__name__)
 
