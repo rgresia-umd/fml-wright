@@ -58,9 +58,7 @@ class DCGAN(BaseModel):
         """
         return self.gen_loss_function(tf.ones_like(fake_output), fake_output)
 
-    def calc_D_loss(
-        self, fake_output, real_output, 
-    ):
+    def calc_D_loss(self, real_output, fake_output):
         """Calculate the D loss.
         Args:
             fake_output (tf.tensor): discriminator's evaluation of fake images
