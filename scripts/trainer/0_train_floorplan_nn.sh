@@ -3,5 +3,4 @@
 
 config='./config/trainer/config_nn_floor_plan.yaml'
 
-python ./main/trainer.py \
-  --config=$config
+python ./main/trainer.py --config=./config/trainer/config_nn_floor_plan_dcgan.yaml

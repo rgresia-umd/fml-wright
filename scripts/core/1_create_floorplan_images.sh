@@ -6,8 +6,4 @@ output_directory='./data/images/floorplan'
 module='floor_plan'
 step='generate_images'
 
-python ./main/core.py \
-  --module=$module \
-  --step=$step \
-  --input_directory=$input_directory \
-  --output_directory=$output_directory
+python ./main/core.py --module=floor_plan --step=generate_images --input_directory=./data/geodata --output_directory=./data/images/floorplan

@@ -6,8 +6,4 @@ output_directory='./data/geodata'
 module='text_to_gdf'
 step='generate_images' # irrelevant
 
-python ./main/core.py \
-  --module=$module \
-  --step=$step \
-  --input_directory=$input_directory \
-  --output_directory=$output_directory
+python ./main/core.py --module=text_to_gdf --step=generate_images --input_directory=./data/representation_prediction --output_directory=./data/geodata

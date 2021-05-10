@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from tensorflow import keras
 
 from fmlwright.core import data_sources
 from fmlwright.trainer.models import BiCycleGAN, Pix2Pix, DCGAN
