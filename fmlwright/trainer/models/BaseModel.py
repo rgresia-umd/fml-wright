@@ -90,7 +90,7 @@ class BaseModel:
         """
         raise NotImplementedError
 
-    def create_example(self, example, filename):
+    def create_example(self, example=None, filename):
         """Creates and stores four examples based on a random input image.
 
         Args:
