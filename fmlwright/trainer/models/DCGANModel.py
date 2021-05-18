@@ -28,14 +28,11 @@ class DCGAN(BaseModel):
         super().__init__(conf)
 
         conf_generator = conf["nn_structure"]["generator"]
-        self.G = load_model("./results/floorplan/living_room/DCGAN/20210509-181947/models/generator.h5")
-            #create_generator(conf_generator, self.input_shape)
+        self.G = create_generator(conf_generator, self.input_shape)
         self.noise_dim = conf["nn_structure"]["generator"]["noise_dim"]
 
         conf_discriminator = conf["nn_structure"]["discriminator"]
-        #create_discriminator(conf_discriminator, self.input_shape)
-        self.D = load_model("./results/floorplan/living_room/DCGAN/20210509-181947/models/discriminator.h5")
-
+        self.D = create_discriminator(conf_discriminator, self.input_shape)
 
         self.disc_loss_function = (
             BinaryCrossentropy(from_logits=True)
@@ -150,20 +147,15 @@ class DCGAN(BaseModel):
         """
         for input_image, output_image in example:
             predictions = {}
-            random_noise = tf.random.normal([1, self.noise_dim])
-            for i in np.arange(4):
+            for i in np.arange(6):
+                random_noise = tf.random.normal([1, self.noise_dim])
                 predicted_image = self.G.predict(random_noise)
                 predicted_image = (predicted_image[0] * 0.5) + 0.5
                 predictions[i] = predicted_image
 
-            fig, axes = plt.subplots(figsize=(15, 3 * 6), nrows=2, ncols=3,)
-
-            input_results = [
-                (random_noise.numpy() * 0.5) + 0.5,
-                (output_image[0] * 0.5) + 0.5,
-            ] + list(predictions.values())
-
-            titles = ["Input Image", "Ground Truth"] + [
+            fig, axes = plt.subplots(figsize=(15, 3 * 6), nrows=2, ncols=3, )
+            input_results = list(predictions.values())
+            titles = [
                 f"Prediction_{pred_num}" for pred_num in list(predictions.keys())
             ]
 

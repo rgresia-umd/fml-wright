@@ -42,6 +42,7 @@ nn_structure:
     filter_size: 64
 
   discriminator:
+    model_type: 'Pix2Pix'
     num_D: 1  # 2 discriminators has been removed for now.
     normalization: 'instance'
     dropout: 0

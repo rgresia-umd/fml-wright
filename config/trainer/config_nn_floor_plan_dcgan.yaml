@@ -2,13 +2,13 @@
 settings:
   use_gpu: True
   storage_location: './results/floorplan' # Gets appended with category and model type.
-  dataset_directory: './data/datasets/floorplan'
+  dataset_directory: './data/datasets/complete_floorplan'
   category: 'living_room'
   batch_size: 1
   buffer_size: 256
   sample: False
-  dataset_size: 539 # limit dataset size due to memory constraints
-  max_n_steps: 400000
+  dataset_size: 2000 # limit dataset size due to memory constraints
+  max_n_steps: 258000
   save_example_per_n_steps: 500
   save_model_per_n_steps: 2000
   store_only_last_model: True
