@@ -28,11 +28,11 @@ class DCGAN(BaseModel):
         super().__init__(conf)
 
         conf_generator = conf["nn_structure"]["generator"]
-        self.G = create_generator(conf_generator, self.input_shape)
+        self.G = load_model("dir")
         self.noise_dim = conf["nn_structure"]["generator"]["noise_dim"]
 
         conf_discriminator = conf["nn_structure"]["discriminator"]
-        self.D = create_discriminator(conf_discriminator, self.input_shape)
+        self.D = load_model("dir")
 
         self.disc_loss_function = (
             BinaryCrossentropy(from_logits=True)
