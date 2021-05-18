@@ -139,36 +139,35 @@ class DCGAN(BaseModel):
         self.D.save(models_directory / f"discriminator{version}.h5")
         self.G.save(models_directory / f"generator{version}.h5")
 
-    def create_example(self, example, filename):
+    def create_example(self, example=None, filename):
         """Creates and stores four examples based on a random input image.
         Args:
             example (tf batch): tensorflow batch.
             filename (str): File name.
         """
-        for input_image, output_image in example:
-            predictions = {}
-            for i in np.arange(6):
-                random_noise = tf.random.normal([1, self.noise_dim])
-                predicted_image = self.G.predict(random_noise)
-                predicted_image = (predicted_image[0] * 0.5) + 0.5
-                predictions[i] = predicted_image
+        predictions = {}
+        for i in np.arange(6):
+            random_noise = tf.random.normal([1, self.noise_dim])
+            predicted_image = self.G.predict(random_noise)
+            predicted_image = (predicted_image[0] * 0.5) + 0.5
+            predictions[i] = predicted_image
 
-            fig, axes = plt.subplots(figsize=(15, 3 * 6), nrows=2, ncols=3, )
-            input_results = list(predictions.values())
-            titles = [
-                f"Prediction_{pred_num}" for pred_num in list(predictions.keys())
-            ]
+        fig, axes = plt.subplots(figsize=(15, 3 * 6), nrows=2, ncols=3, )
+        input_results = list(predictions.values())
+        titles = [
+            f"Prediction_{pred_num}" for pred_num in list(predictions.keys())
+        ]
 
-            for title, img, ax in zip(titles, input_results, axes.flatten()):
-                plt.subplot(ax)
-                plt.title(title, fontweight="bold")
-                plt.imshow(img)
-                plt.axis("off")
+        for title, img, ax in zip(titles, input_results, axes.flatten()):
+            plt.subplot(ax)
+            plt.title(title, fontweight="bold")
+            plt.imshow(img)
+            plt.axis("off")
 
-            for ax in axes.flatten():
-                plt.subplot(ax)
-                plt.axis("off")
+        for ax in axes.flatten():
+            plt.subplot(ax)
+            plt.axis("off")
 
-            plt.tight_layout()
-            plt.savefig(filename)
-            plt.close()
+        plt.tight_layout()
+        plt.savefig(filename)
+        plt.close()
