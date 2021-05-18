@@ -38,4 +38,8 @@ if __name__ == "__main__":
         config["settings"]["input_shape"]
     )
 
-    build_bicyclegan_generator(config)
+    model = build_bicyclegan_generator(config)
+    model.create_example(str(
+                            self.image_storage
+                            / f"example"
+                        ))
