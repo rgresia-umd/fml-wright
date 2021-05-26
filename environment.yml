@@ -4,5 +4,6 @@ dependencies:
   - jupyter=1.0.0
   - pip=20.1
   - libspatialindex=1.9.3
+  - matplotlib=3.3.4
   - pip:
       - pre-commit
